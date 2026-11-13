@@ -17,7 +17,6 @@
 #include <linux/of_reserved_mem.h>
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
 #include <linux/dma-heap.h>
-#include <linux/workarounds.h>
 #endif
 #if IS_ENABLED(CONFIG_ION_EXYNOS)
 #include <linux/ion.h>
@@ -395,7 +394,7 @@ int mfc_mem_special_buf_alloc(struct mfc_dev *dev,
 {
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS) && IS_ENABLED(CONFIG_ION_EXYNOS)
 	/* both allocators built: runtime-select */
-	if (is_dma_buf_env()) {
+	if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF)) {
 		if (special_buf->buftype == MFCBUF_DRM_FW)
 			return mfc_mem_fw_alloc(dev, special_buf);
 		return mfc_mem_dma_heap_alloc(dev, special_buf);
@@ -418,7 +417,7 @@ void mfc_mem_special_buf_free(struct mfc_dev *dev, struct mfc_special_buf *speci
 {
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS) && IS_ENABLED(CONFIG_ION_EXYNOS)
 	/* both allocators built: runtime-select */
-	if (is_dma_buf_env()) {
+	if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF)) {
 		if (special_buf->buftype == MFCBUF_DRM_FW)
 			mfc_mem_fw_free(dev, special_buf);
 		else
@@ -813,7 +812,7 @@ int mfc_iommu_map_firmware(struct mfc_core *core, struct mfc_special_buf *fw_buf
 {
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS) && IS_ENABLED(CONFIG_ION_EXYNOS)
 	/* both allocators built: runtime-select */
-	if (is_dma_buf_env())
+	if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF))
 		return mfc_iommu_map_firmware_dmabuf(core, fw_buf);
 	return mfc_iommu_map_firmware_ion(core, fw_buf);
 #elif IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
@@ -872,7 +871,7 @@ void mfc_check_iova(struct mfc_dev *dev)
 	struct mfc_ctx *ctx;
 	unsigned long total_iova = 0;
 
-	if (!is_dma_buf_env()) {
+	if (!IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF)) {
 		dev->skip_lazy_unmap = 1;
 		return;
 	}

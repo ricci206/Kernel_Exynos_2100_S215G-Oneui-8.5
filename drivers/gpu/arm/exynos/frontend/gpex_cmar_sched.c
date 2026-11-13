@@ -19,8 +19,6 @@
  */
 
 /* Implements */
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpex_cmar_sched.h>
 
 /* Uses */
@@ -73,7 +71,6 @@ int gpex_cmar_sched_set_affinity(void)
 {
 	return set_cpus_allowed_ptr(current, &mask);
 }
-EXPORT_SYMBOL_GPL(gpex_cmar_sched_set_affinity);
 
 static ssize_t show_cmar_forced_sched_enable(char *buf)
 {

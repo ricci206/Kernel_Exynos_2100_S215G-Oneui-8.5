@@ -11,7 +11,9 @@
  */
 
 #include <soc/samsung/exynos-smc.h>
-#include <linux/workarounds.h>
+#if IS_ENABLED(CONFIG_EXYNOS_IMGLOADER)
+#include <soc/samsung/imgloader.h>
+#endif
 
 #include "mfc_common.h"
 
@@ -55,7 +57,7 @@ static int __mfc_core_init(struct mfc_core *core, struct mfc_ctx *ctx)
 		core->fw.drm_status = 0;
 	} else {
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
-		if (is_dma_buf_env()) {
+		if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF)) {
 			phys_addr_t protdesc_phys;
 			dma_addr_t protdesc_daddr;
 
@@ -101,7 +103,7 @@ static int __mfc_core_init(struct mfc_core *core, struct mfc_ctx *ctx)
 			call_dop(core, dump_and_stop_debug_mode, core);
 			core->fw.drm_status = 0;
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
-			if (is_dma_buf_env() && core->drm_fw_prot) {
+			if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF) && core->drm_fw_prot) {
 				phys_addr_t protdesc_phys = virt_to_phys(core->drm_fw_prot);
 
 				exynos_smc(SMC_DRM_PPMP_UNPROT, protdesc_phys, 0, 0);
@@ -175,7 +177,7 @@ err_common_ctx:
 		}
 
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
-		if (is_dma_buf_env() && core->drm_fw_prot) {
+		if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF) && core->drm_fw_prot) {
 			phys_addr_t protdesc_phys = virt_to_phys(core->drm_fw_prot);
 
 			smc_ret = exynos_smc(SMC_DRM_PPMP_UNPROT, protdesc_phys, 0, 0);
@@ -300,7 +302,7 @@ static int __mfc_core_deinit(struct mfc_core *core, struct mfc_ctx *ctx)
 			}
 
 #if IS_ENABLED(CONFIG_DMABUF_SAMSUNG_HEAPS)
-			if (is_dma_buf_env() && core->drm_fw_prot) {
+			if (IS_ENABLED(CONFIG_EXPERIMENTAL_DMA_BUF) && core->drm_fw_prot) {
 				phys_addr_t protdesc_phys = virt_to_phys(core->drm_fw_prot);
 
 				/* Request buffer Secure-DVA unset */

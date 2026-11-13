@@ -23,8 +23,6 @@
 
 /* Uses */
 #include <mali_kbase.h>
-#include <mali_kbase_hwaccess_pm.h>
-#include <linux/protected_mode_switcher.h>
 #include <debug/mali_kbase_debug_ktrace.h>
 
 #include <gpex_platform.h>
@@ -40,7 +38,6 @@
 
 #include <gpexbe_llc_coherency.h>
 #include <gpexbe_utilization.h>
-#include <gpexbe_mem_usage.h>
 #include <gpexbe_pm.h>
 #include <gpexbe_secure.h>
 #include <gpexbe_dmabuf.h>
@@ -49,8 +46,6 @@
 #include <mali_exynos_ioctl.h>
 
 #include <gpexbe_clock.h>
-#include <mali_kbase_defs.h>
-#include <linux/clk.h>
 
 static int mali_exynos_ioctl_amigo_flags_fn(struct kbase_context *kctx,
 					    struct mali_exynos_ioctl_amigo_flags *flags)
@@ -282,26 +277,8 @@ int mali_exynos_set_pm_state_resume_end(void)
 
 void mali_exynos_set_jobslot_status(int slot, bool is_active)
 {
-	static bool js_active[BASE_JM_MAX_NR_SLOTS];
-	bool any = false;
-	int i;
-
-	if (slot >= 0 && slot < BASE_JM_MAX_NR_SLOTS) {
-		/* kbase clears every slot via (0, false) before rescanning */
-		if (slot == 0 && !is_active) {
-			for (i = 0; i < BASE_JM_MAX_NR_SLOTS; i++)
-				js_active[i] = false;
-		}
-		js_active[slot] = is_active;
-	}
-
-	for (i = 0; i < BASE_JM_MAX_NR_SLOTS; i++)
-		any |= js_active[i];
-
 	if (slot == 0)
 		gpex_gts_set_jobslot_status(is_active);
-
-	gpexbe_utilization_set_gpu_active(any);
 }
 
 void mali_exynos_update_jobslot_util(int slot, bool gpu_active, u32 ns_time)
@@ -312,19 +289,8 @@ void mali_exynos_update_jobslot_util(int slot, bool gpu_active, u32 ns_time)
 
 void mali_exynos_update_job_load(struct kbase_jd_atom *katom, ktime_t *end_timestamp)
 {
-	if (katom && end_timestamp) {
-		u64 ns_spent = ktime_to_ns(ktime_sub(*end_timestamp, katom->start_timestamp));
-		enum gpex_job_type type = GPEX_JOB_TYPE_OTHER;
-
-		if (katom->core_req & BASE_JD_REQ_ONLY_COMPUTE)
-			type = GPEX_JOB_TYPE_COMPUTE;
-		else if (katom->core_req & BASE_JD_REQ_FS)
-			type = GPEX_JOB_TYPE_FRAGMENT;
-		else if (katom->core_req & BASE_JD_REQ_CS)
-			type = GPEX_JOB_TYPE_VERTEX;
-
-		gpexbe_utilization_update_job_load(type, ns_spent);
-	}
+	if (katom && end_timestamp)
+		gpexbe_utilization_update_job_load(katom, end_timestamp);
 }
 
 int mali_exynos_set_count(struct kbase_jd_atom *katom, u32 status, bool stop)
@@ -410,55 +376,22 @@ static int pm_callback_runtime_on(struct kbase_device *kbdev)
 /* Secure Rendering functions Start */
 int mali_exynos_legacy_jm_enter_protected_mode(struct kbase_device *kbdev)
 {
-	return -ENOSYS;
+	return gpexbe_secure_legacy_jm_enter_protected_mode(kbdev);
 }
 
 int mali_exynos_legacy_jm_exit_protected_mode(struct kbase_device *kbdev)
 {
-	return -ENOSYS;
+	return gpexbe_secure_legacy_jm_exit_protected_mode(kbdev);
 }
 
 int mali_exynos_legacy_pm_exit_protected_mode(struct kbase_device *kbdev)
 {
-	return -ENOSYS;
-}
-
-static int mali_exynos_secure_mode_enable(struct protected_mode_device *pdev)
-{
-	int ret;
-
-	if (!pdev)
-		return -EINVAL;
-
-	ret = kbase_pm_protected_mode_enable(pdev->data);
-	if (ret != 0)
-		return ret;
-
-	return gpexbe_secure_protection_enable();
-}
-
-static int mali_exynos_secure_mode_disable(struct protected_mode_device *pdev)
-{
-	int ret;
-
-	if (!pdev)
-		return -EINVAL;
-
-	ret = kbase_pm_protected_mode_disable(pdev->data);
-	if (ret != 0)
-		return ret;
-
-	return gpexbe_secure_protection_disable();
+	return gpexbe_secure_legacy_pm_exit_protected_mode(kbdev);
 }
 
 struct protected_mode_ops *mali_exynos_get_protected_ops(void)
 {
-	static struct protected_mode_ops exynos_protected_ops = {
-		.protected_mode_enable = &mali_exynos_secure_mode_enable,
-		.protected_mode_disable = &mali_exynos_secure_mode_disable
-	};
-
-	return &exynos_protected_ops;
+	return gpexbe_secure_get_protected_mode_ops();
 }
 /* Secure Rendering functions End */
 
@@ -498,78 +431,8 @@ void mali_exynos_debug_print_info(struct kbase_device *kbdev)
 	}
 }
 
-static struct kbase_device *mali_kbdev;
-
-static ssize_t mali_show_gpu_memory(char *buf, size_t max_size)
-{
-	ssize_t ret = 0;
-	uint64_t gpu_mem_used = 0;
-	bool buffer_full = false;
-	const int padding = 100;
-	struct kbase_context *kctx;
-
-	if (!buf || !mali_kbdev)
-		return 0;
-
-	ret += scnprintf(buf + ret, max_size - ret, "%9s %9s %12s\n", "tgid", "pid", "bytes_used");
-
-	mutex_lock(&mali_kbdev->kctx_list_lock);
-	list_for_each_entry (kctx, &mali_kbdev->kctx_list, kctx_list_link) {
-		if (ret + padding > max_size) {
-			buffer_full = true;
-			break;
-		}
-
-		gpu_mem_used = atomic_read(&(kctx->used_pages)) * PAGE_SIZE;
-		ret += snprintf(buf + ret, max_size - ret, "%9d %9d %12llu\n", kctx->tgid,
-				kctx->pid, gpu_mem_used);
-	}
-	mutex_unlock(&mali_kbdev->kctx_list_lock);
-
-	if (buffer_full)
-		ret += scnprintf(buf + ret, max_size - ret, "error: buffer is full\n");
-
-	return ret;
-}
-
-static int mali_get_total_used_pages(bool print_all_buffers)
-{
-	struct kbase_context *kctx = NULL;
-	struct device *dev = NULL;
-	int total_used_pages = 0;
-
-	if (!mali_kbdev)
-		return 0;
-
-	dev = mali_kbdev->dev;
-	total_used_pages += atomic_read(&(mali_kbdev->memdev.used_pages));
-
-	if (print_all_buffers) {
-		dev_warn(dev, "%-16s  %10u\n", mali_kbdev->devname, total_used_pages);
-		if (mutex_trylock(&mali_kbdev->kctx_list_lock)) {
-			list_for_each_entry (kctx, &mali_kbdev->kctx_list, kctx_list_link) {
-				dev_warn(dev, "%10u | tgid=%10d | pid=%10d  | name=%20s\n",
-						atomic_read(&(kctx->used_pages)),
-						kctx->tgid,
-						kctx->pid,
-						((struct platform_context *)kctx->platform_data)->name);
-			}
-			mutex_unlock(&mali_kbdev->kctx_list_lock);
-		}
-	}
-
-	return total_used_pages;
-}
-
-static const struct gpex_mem_usage_ops mali_mem_ops = {
-	.show_gpu_memory = mali_show_gpu_memory,
-	.get_total_used_pages = mali_get_total_used_pages,
-};
-
 static int mali_exynos_kbase_entrypoint_init(struct kbase_device *kbdev)
 {
-	mali_kbdev = kbdev;
-	gpexbe_mem_usage_set_ops(&mali_mem_ops);
 	gpex_platform_init(&kbdev->dev);
 	kbdev->platform_context = (void *)gpex_utils_get_exynos_context();
 
@@ -578,8 +441,6 @@ static int mali_exynos_kbase_entrypoint_init(struct kbase_device *kbdev)
 
 static void mali_exynos_kbase_entrypoint_term(struct kbase_device *kbdev)
 {
-	gpexbe_mem_usage_set_ops(NULL);
-	mali_kbdev = NULL;
 	gpex_platform_term();
 	kbdev->platform_context = NULL;
 }
@@ -605,78 +466,6 @@ static void mali_exynos_kbase_context_term(struct kbase_context *kctx)
 	kfree(kctx->platform_data);
 }
 
-
-static void *enumerate_gpu_clk(struct kbase_device *kbdev, unsigned int index)
-{
-	if (index >= kbdev->nr_clocks)
-		return NULL;
-
-#if MALI_USE_CSF
-	if (of_machine_is_compatible("arm,juno"))
-		WARN_ON(kbdev->nr_clocks != 1);
-#endif
-	return kbdev->clocks[index];
-}
-
-static unsigned long get_gpu_clk_rate(struct kbase_device *kbdev, void *gpu_clk_handle)
-{
-	CSTD_UNUSED(kbdev);
-#if MALI_USE_CSF
-	/* On Juno fpga platforms, the GPU clock rate is reported as 600 MHZ at
-	 * the boot time. Then after the first call to kbase_devfreq_target()
-	 * the clock rate is reported as 450 MHZ and the frequency does not
-	 * change after that. But the actual frequency at which GPU operates
-	 * is always 50 MHz, which is equal to the frequency of system counter
-	 * and HW counters also increment at the same rate.
-	 * DVFS, which is a client of kbase_ipa_control, needs normalization of
-	 * GPU_ACTIVE counter to calculate the time for which GPU has been busy.
-	 * So for the correct normalization need to return the system counter
-	 * frequency value.
-	 * This is a reasonable workaround as the frequency value remains same
-	 * throughout. It can be removed after GPUCORE-25693.
-	 */
-	if (of_machine_is_compatible("arm,juno"))
-		return arch_timer_get_cntfrq();
-#endif
-	return gpexbe_clock_get_rate();
-}
-
-static int gpu_clk_notifier_register(struct kbase_device *kbdev, void *gpu_clk_handle,
-				     struct notifier_block *nb)
-{
-	CSTD_UNUSED(kbdev);
-
-	compiletime_assert(offsetof(struct clk_notifier_data, clk) ==
-				   offsetof(struct kbase_gpu_clk_notifier_data, gpu_clk_handle),
-			   "mismatch in the offset of clk member");
-
-	compiletime_assert(
-		sizeof(((struct clk_notifier_data *)0)->clk) ==
-			sizeof(((struct kbase_gpu_clk_notifier_data *)0)->gpu_clk_handle),
-		"mismatch in the size of clk member");
-
-#if MALI_USE_CSF
-	/* Frequency is fixed on Juno platforms */
-	if (of_machine_is_compatible("arm,juno"))
-		return 0;
-#endif
-
-	return clk_notifier_register((struct clk *)gpu_clk_handle, nb);
-}
-
-static void gpu_clk_notifier_unregister(struct kbase_device *kbdev, void *gpu_clk_handle,
-					struct notifier_block *nb)
-{
-	CSTD_UNUSED(kbdev);
-
-#if MALI_USE_CSF
-	if (of_machine_is_compatible("arm,juno"))
-		return;
-#endif
-
-	clk_notifier_unregister((struct clk *)gpu_clk_handle, nb);
-}
-
 struct kbase_platform_funcs_conf platform_funcs = {
 	.platform_init_func = &mali_exynos_kbase_entrypoint_init,
 	.platform_term_func = &mali_exynos_kbase_entrypoint_term,
@@ -696,14 +485,6 @@ struct kbase_pm_callback_conf pm_callbacks = {
 	.power_runtime_term_callback = gpu_device_runtime_disable,
 	.power_runtime_on_callback = pm_callback_runtime_on,
 	.power_runtime_off_callback = pm_callback_runtime_off,
-};
-
-
-struct kbase_clk_rate_trace_op_conf clk_rate_trace_ops = {
-	.get_gpu_clk_rate = get_gpu_clk_rate,
-	.enumerate_gpu_clk = enumerate_gpu_clk,
-	.gpu_clk_notifier_register = gpu_clk_notifier_register,
-	.gpu_clk_notifier_unregister = gpu_clk_notifier_unregister,
 };
 
 MODULE_SOFTDEP("pre: exynos-acme");

@@ -19,8 +19,6 @@
  */
 
 /* Implements */
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpexwa_interactive_boost.h>
 
 /* Uses */
@@ -49,7 +47,6 @@ int gpexwa_interactive_boost_set(int duration)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpexwa_interactive_boost_set);
 
 static void work_interactive_boost_set(struct work_struct *data)
 {

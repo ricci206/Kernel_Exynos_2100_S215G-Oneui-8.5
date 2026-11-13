@@ -113,7 +113,6 @@ int gpex_clock_get_cur_clock(void)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_clock_get_cur_clock);
 
 int gpex_clock_get_min_lock(void)
 {

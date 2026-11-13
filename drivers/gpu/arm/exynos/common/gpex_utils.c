@@ -19,18 +19,18 @@
  */
 
 /* Implements */
-#include <linux/export.h>
 #include <gpex_utils.h>
 
 /* Uses */
 #include <linux/device.h>
 #include <linux/sysfs.h>
 
-struct kbase_device;
+#include <mali_kbase.h>
 
 #define MAX_ATTRS 128
 #define SYSFS_KOBJECT_GROUP_NAME "gpu"
 
+struct kbase_device *pkbdev;
 struct exynos_context mali_exynos_ctx;
 
 struct _utils_info {
@@ -196,7 +196,6 @@ void gpex_utils_sysfs_set_gpu_model_callback(sysfs_device_read_func show_gpu_mod
 {
 	utils_info.show_gpu_model_cb = show_gpu_model_fn;
 }
-EXPORT_SYMBOL_GPL(gpex_utils_sysfs_set_gpu_model_callback);
 
 static ssize_t show_gpu_model(char *buf)
 {
@@ -266,14 +265,13 @@ struct device *gpex_utils_get_device(void)
 
 struct kbase_device *gpex_utils_get_kbase_device(void)
 {
-	return NULL;
+	return pkbdev;
 }
 
 struct exynos_context *gpex_utils_get_exynos_context(void)
 {
 	return &mali_exynos_ctx;
 }
-EXPORT_SYMBOL_GPL(gpex_utils_get_exynos_context);
 
 /************************************************************************
  * INIT and TERM functions
@@ -282,6 +280,7 @@ EXPORT_SYMBOL_GPL(gpex_utils_get_exynos_context);
 int gpex_utils_init(struct device **dev)
 {
 	utils_info.dev = *dev;
+	pkbdev = container_of(dev, struct kbase_device, dev);
 
 	utils_info.debug_level = WARNING;
 

@@ -24,6 +24,7 @@
 #define CSTD_UNUSED(x) ((void)(x))
 #endif /* CSTD_UNUSED */
 
+#include <mali_kbase.h>
 #include <linux/device.h>
 
 /*******************

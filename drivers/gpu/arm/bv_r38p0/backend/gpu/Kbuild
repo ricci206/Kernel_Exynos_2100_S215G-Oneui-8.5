@@ -18,7 +18,7 @@
 #
 #
 
-mali_kbase_r38p0-y += \
+mali_kbase-y += \
     backend/gpu/mali_kbase_cache_policy_backend.o \
     backend/gpu/mali_kbase_gpuprops_backend.o \
     backend/gpu/mali_kbase_irq_linux.o \
@@ -29,13 +29,14 @@ mali_kbase_r38p0-y += \
     backend/gpu/mali_kbase_pm_ca.o \
     backend/gpu/mali_kbase_pm_always_on.o \
     backend/gpu/mali_kbase_pm_coarse_demand.o \
+    backend/gpu/mali_kbase_pm_adaptive.o \
     backend/gpu/mali_kbase_pm_policy.o \
     backend/gpu/mali_kbase_time.o \
     backend/gpu/mali_kbase_l2_mmu_config.o \
     backend/gpu/mali_kbase_clk_rate_trace_mgr.o
 
 ifeq ($(MALI_USE_CSF),0)
-    mali_kbase_r38p0-y += \
+    mali_kbase-y += \
         backend/gpu/mali_kbase_instr_backend.o \
         backend/gpu/mali_kbase_jm_as.o \
         backend/gpu/mali_kbase_debug_job_fault_backend.o \
@@ -44,11 +45,11 @@ ifeq ($(MALI_USE_CSF),0)
 endif
 
 
-mali_kbase_r38p0-$(CONFIG_MALI_DEVFREQ) += \
+mali_kbase-$(CONFIG_MALI_DEVFREQ) += \
     backend/gpu/mali_kbase_devfreq.o
 
 # Dummy model
-mali_kbase_r38p0-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_dummy.o
-mali_kbase_r38p0-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_linux.o
+mali_kbase-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_dummy.o
+mali_kbase-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_linux.o
 # HW error simulation
-mali_kbase_r38p0-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_error_generator.o
+mali_kbase-$(CONFIG_MALI_NO_MALI) += backend/gpu/mali_kbase_model_error_generator.o

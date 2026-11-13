@@ -18,8 +18,6 @@
  * http://www.gnu.org/licenses/gpl-2.0.html.
  */
 
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpex_pm.h>
 #include <gpex_dvfs.h>
 
@@ -57,7 +55,6 @@ int gpex_pm_set_state(int state)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_set_state);
 
 int gpex_pm_get_state(int *state)
 {
@@ -73,31 +70,26 @@ int gpex_pm_power_on(struct device *dev)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_power_on);
 
 void gpex_pm_power_autosuspend(struct device *dev)
 {
 	return;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_power_autosuspend);
 
 void gpex_pm_suspend(struct device *dev)
 {
 	return;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_suspend);
 
 int gpex_pm_runtime_init(struct device *dev)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_runtime_init);
 
 void gpex_pm_runtime_term(struct device *dev)
 {
 	return;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_runtime_term);
 
 void gpex_pm_runtime_off_prepare(struct device *dev)
 {
@@ -105,10 +97,8 @@ void gpex_pm_runtime_off_prepare(struct device *dev)
 
 	return;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_runtime_off_prepare);
 
 int gpex_pm_runtime_on_prepare(struct device *dev)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_pm_runtime_on_prepare);

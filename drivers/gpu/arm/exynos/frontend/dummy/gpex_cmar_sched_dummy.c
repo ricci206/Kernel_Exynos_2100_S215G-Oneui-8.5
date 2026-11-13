@@ -19,8 +19,6 @@
  */
 
 /* Implements */
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpex_cmar_sched.h>
 
 int gpex_cmar_sched_set_forced_sched(int mode)
@@ -32,7 +30,6 @@ int gpex_cmar_sched_set_affinity(void)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_cmar_sched_set_affinity);
 
 int gpex_cmar_sched_init(void)
 {

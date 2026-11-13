@@ -31,10 +31,6 @@ extern struct kbase_pm_callback_conf pm_callbacks;
 #define POWER_MANAGEMENT_CALLBACKS (NULL)
 #endif
 
-/* Clock rate */
-#define CLK_RATE_TRACE_OPS (&clk_rate_trace_ops)
-extern struct kbase_clk_rate_trace_op_conf clk_rate_trace_ops;
-
 /**
  * Platform specific configuration functions
  *

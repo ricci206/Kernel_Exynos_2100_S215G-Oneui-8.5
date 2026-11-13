@@ -56,7 +56,7 @@ typedef struct _dvfs_clock_info {
 } dvfs_clock_info;
 
 struct dvfs_info {
-	struct device *dev;
+	struct kbase_device *kbdev;
 	int step;
 	dvfs_clock_info *table;
 	int table_size;

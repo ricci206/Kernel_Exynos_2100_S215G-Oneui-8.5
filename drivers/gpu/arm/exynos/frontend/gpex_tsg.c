@@ -18,8 +18,6 @@
  * http://www.gnu.org/licenses/gpl-2.0.html.
  */
 
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpex_tsg.h>
 
 #include <gpex_utils.h>
@@ -217,7 +215,6 @@ int gpex_tsg_get_amigo_flags(void)
 {
 	return tsg.amigo_flags;
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_get_amigo_flags);
 
 uint32_t gpex_tsg_get_queued_threshold(int idx)
 {
@@ -380,7 +377,6 @@ int gpex_tsg_set_count(u32 status, bool stop)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_set_count);
 
 static void gpex_tsg_context_init(void)
 {
@@ -405,7 +401,7 @@ static void gpex_tsg_context_init(void)
 int gpex_tsg_init(struct device **dev)
 {
 	raw_spin_lock_init(&tsg.spinlock);
-	tsg.dev = dev ? *dev : NULL;
+	tsg.kbdev = container_of(dev, struct kbase_device, dev);
 
 	gpex_tsg_context_init();
 	gpex_tsg_external_init(&tsg);
@@ -420,7 +416,7 @@ int gpex_tsg_term(void)
 {
 	gpex_tsg_sysfs_term();
 	gpex_tsg_external_term();
-	tsg.dev = NULL;
+	tsg.kbdev = NULL;
 
 	return 0;
 }
@@ -428,24 +424,20 @@ int gpex_tsg_term(void)
 void gpex_tsg_update_firstjob_time(void)
 {
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_update_firstjob_time);
 
 void gpex_tsg_update_lastjob_time(int slot_nr)
 {
 	CSTD_UNUSED(slot_nr);
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_update_lastjob_time);
 
 void gpex_tsg_update_jobsubmit_time(void)
 {
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_update_jobsubmit_time);
 
 void gpex_tsg_sum_jobs_time(int slot_nr)
 {
 	CSTD_UNUSED(slot_nr);
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_sum_jobs_time);
 
 int gpex_tsg_amigo_interframe_sw_update(ktime_t start, ktime_t end)
 {
@@ -454,16 +446,13 @@ int gpex_tsg_amigo_interframe_sw_update(ktime_t start, ktime_t end)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_amigo_interframe_sw_update);
 
 int gpex_tsg_amigo_interframe_hw_update_eof(void)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_amigo_interframe_hw_update_eof);
 
 int gpex_tsg_amigo_interframe_hw_update(void)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpex_tsg_amigo_interframe_hw_update);

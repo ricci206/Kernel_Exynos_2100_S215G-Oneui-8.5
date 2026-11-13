@@ -18,8 +18,6 @@
  * http://www.gnu.org/licenses/gpl-2.0.html.
  */
 
-#include <linux/types.h>
-#include <linux/export.h>
 #include <gpexbe_pm.h>
 
 struct exynos_pm_domain {
@@ -62,7 +60,6 @@ int gpexbe_pm_get_status(void)
 {
 	return 0;
 }
-EXPORT_SYMBOL_GPL(gpexbe_pm_get_status);
 
 struct exynos_pm_domain *gpexbe_pm_get_exynos_pm_domain(void)
 {

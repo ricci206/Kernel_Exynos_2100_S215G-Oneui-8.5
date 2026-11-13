@@ -58,7 +58,7 @@ OUT_DTBIMAGE="$TMPDIR/dtb.img"
 MKBOOTIMG="$(pwd)/build/mkbootimg/mkbootimg.py"
 MKDTBOIMG="$(pwd)/build/dtb/mkdtboimg.py"
 
-FK_VER="v1.1.2"
+FK_VER="v1.1.3"
 USE_CCACHE="${USE_CCACHE:-1}"
 USE_THINLTO_CACHE="${USE_THINLTO_CACHE:-0}"
 DO_TAR="${DO_TAR:-1}"
@@ -79,10 +79,10 @@ fi
 DROIDSPACES=1
 
 # Other variables
-DO_KSU=0
+DO_KSU=1
 DO_SUKI=0
 DO_XXKSU=0
-DO_CLEAN=0
+DO_CLEAN=1
 DO_MENUCONFIG=0
 IS_RELEASE=0
 DO_TG=0

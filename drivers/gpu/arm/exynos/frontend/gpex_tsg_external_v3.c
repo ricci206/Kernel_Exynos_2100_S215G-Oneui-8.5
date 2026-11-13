@@ -18,7 +18,6 @@
  * http://www.gnu.org/licenses/gpl-2.0.html.
  */
 
-#include <linux/types.h>
 #include <linux/notifier.h>
 #include <linux/ktime.h>
 

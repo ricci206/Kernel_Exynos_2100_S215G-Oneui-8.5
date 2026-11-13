@@ -22,20 +22,11 @@
 #define _GPEXBE_UTILIZATION_H_
 
 #include <linux/device.h>
-#include <linux/types.h>
-#include <linux/ktime.h>
-
-enum gpex_job_type {
-	GPEX_JOB_TYPE_COMPUTE = 0,
-	GPEX_JOB_TYPE_FRAGMENT,
-	GPEX_JOB_TYPE_VERTEX,
-	GPEX_JOB_TYPE_OTHER
-};
+#include <mali_kbase.h>
 
 /**
  * gpexbe_utilization_init() - initializes gpexbe_utilization backend module
  * @dev: mali device structure
- * @dev: gpu device structure
  *
  * Return: 0 on success
  */
@@ -63,17 +54,14 @@ int gpexbe_utilization_calc_utilization(void);
 void gpexbe_utilization_calculate_compute_ratio(void);
 
 /**
- * gpexbe_utilization_update_job_load() - update current gpu job load information
- * @type: job type (compute, fragment, vertex)
- * @ns_spent: elapsed time in nanoseconds
+ * gpexbe_utilization_update_job_load() - update current gpu job load information (called from mali_kbase)
+ * @katom: pointer to mali katom
+ * @end_timestamp: time of katom job completion
+ *
+ * Information updated by this function is stored in an internal structure for use by other gpexbe_utilization functions
+ * This function is called from mali_kbase when a katom is completed by the GPU
  */
-void gpexbe_utilization_update_job_load(enum gpex_job_type type, u64 ns_spent);
-
-/**
- * gpexbe_utilization_set_gpu_active() - update GPU active/idle status
- * @active: true if GPU is active
- */
-void gpexbe_utilization_set_gpu_active(bool active);
+void gpexbe_utilization_update_job_load(struct kbase_jd_atom *katom, ktime_t *end_timestamp);
 
 /**
  * gpexbe_utilization_get_compute_job_time() - get time spent by GPU on compute jobs since previous compute ratio calculation

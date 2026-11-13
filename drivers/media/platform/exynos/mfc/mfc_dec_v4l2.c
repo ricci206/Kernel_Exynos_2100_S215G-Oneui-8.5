@@ -260,17 +260,6 @@ static void __mfc_dec_change_format(struct mfc_ctx *ctx)
 					ctx->dst_fmt = __mfc_dec_find_format(ctx, V4L2_PIX_FMT_NV12M_S10B);
 			}
 			break;
-		case V4L2_PIX_FMT_NV12N_SBWC_8B:
-		case V4L2_PIX_FMT_NV12N_SBWC_10B:
-			if (ctx->is_sbwc) {
-				ctx->dst_fmt = __mfc_dec_find_format(ctx, V4L2_PIX_FMT_NV12N_SBWC_10B);
-			} else {
-				if (dev->pdata->P010_decoding)
-					ctx->dst_fmt = __mfc_dec_find_format(ctx, V4L2_PIX_FMT_NV12M_P010);
-				else
-					ctx->dst_fmt = __mfc_dec_find_format(ctx, V4L2_PIX_FMT_NV12N_10B);
-			}
-			break;
 		default:
 			if (dev->pdata->P010_decoding)
 				ctx->dst_fmt = __mfc_dec_find_format(ctx, V4L2_PIX_FMT_NV12M_P010);
@@ -1206,10 +1195,6 @@ static int __mfc_dec_get_ctrl_val(struct mfc_ctx *ctx, struct v4l2_control *ctrl
 			mfc_ctx_err("display delay information not parsed yet\n");
 			return -EINVAL;
 		}
-		break;
-	case V4L2_CID_MPEG_VIDEO_PRIORITY:
-		ctrl->value = ctx->prio;
-		mfc_debug(2, "[PRIO] user get priority: %d\n", ctrl->value);
 		break;
 	case V4L2_CID_MPEG_MFC_AV1_FILM_GRAIN_PRESENT:
 		ctrl->value = dec->av1_film_grain_present;
